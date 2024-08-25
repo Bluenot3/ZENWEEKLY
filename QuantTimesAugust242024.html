@@ -1,0 +1,68 @@
+import React from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from 'recharts';
+
+const data = [
+  { name: 'Gemini-1.5-Pro', score: 1257, ci: 3, votes: 55604, org: 'Google', license: 'Proprietary', cutoff: '2023/11', rank: 10 },
+  { name: 'GPT-4-Turbo', score: 1257, ci: 2.5, votes: 86648, org: 'OpenAI', license: 'Proprietary', cutoff: '2023/12', rank: 10 },
+  { name: 'Mistral-Large', score: 1250, ci: 5, votes: 14793, org: 'Mistral', license: 'Mistral Research', cutoff: '2024/7', rank: 12 },
+  { name: 'Athene-70b', score: 1250, ci: 5, votes: 13655, org: 'NexusFlow', license: 'CC-BY-NC-4.0', cutoff: '2024/7', rank: 12 },
+  { name: 'GPT-4-1106', score: 1251, ci: 3, votes: 93540, org: 'OpenAI', license: 'Proprietary', cutoff: '2023/4', rank: 14 },
+  { name: 'Claude 3 Opus', score: 1248, ci: 3, votes: 158077, org: 'Anthropic', license: 'Proprietary', cutoff: '2023/8', rank: 14 },
+  { name: 'Meta-Llama-3.1', score: 1247, ci: 5, votes: 17011, org: 'Meta', license: 'Llama 3.1 Community', cutoff: '2023/12', rank: 14 },
+  { name: 'GPT-4-0125', score: 1245, ci: 3, votes: 86921, org: 'OpenAI', license: 'Proprietary', cutoff: '2023/12', rank: 15 },
+];
+
+const AIModelComparison = () => {
+  return (
+    <div className="p-4 bg-gray-100 rounded-lg">
+      <h2 className="text-2xl font-bold mb-4">AI Language Model Comparison</h2>
+      
+      <div className="overflow-x-auto">
+        <table className="min-w-full bg-white border border-gray-300">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="px-4 py-2 border">Rank</th>
+              <th className="px-4 py-2 border">Model</th>
+              <th className="px-4 py-2 border">Arena Score</th>
+              <th className="px-4 py-2 border">95% CI</th>
+              <th className="px-4 py-2 border">Votes</th>
+              <th className="px-4 py-2 border">Organization</th>
+              <th className="px-4 py-2 border">License</th>
+              <th className="px-4 py-2 border">Knowledge Cutoff</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((model, index) => (
+              <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
+                <td className="px-4 py-2 border">{model.rank}</td>
+                <td className="px-4 py-2 border">{model.name}</td>
+                <td className="px-4 py-2 border">{model.score}</td>
+                <td className="px-4 py-2 border">±{model.ci}</td>
+                <td className="px-4 py-2 border">{model.votes.toLocaleString()}</td>
+                <td className="px-4 py-2 border">{model.org}</td>
+                <td className="px-4 py-2 border">{model.license}</td>
+                <td className="px-4 py-2 border">{model.cutoff}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      
+      <div className="mt-8">
+        <h3 className="text-xl font-semibold mb-4">Arena Scores Comparison</h3>
+        <ResponsiveContainer width="100%" height={400}>
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} height={100} />
+            <YAxis domain={[1240, 1260]} />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="score" fill="#8884d8" name="Arena Score" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
+export default AIModelComparison;
