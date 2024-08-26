@@ -1,0 +1,474 @@
+<html><head><base href="https://ai.leaderboard.quantum.universe/"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Quantum Times: Interactive AI Model Leaderboard</title><script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script><style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family: 'Exo 2', sans-serif;
+        overflow: hidden;
+        background: #000000;
+        color: #ffffff;
+    }
+    #canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: -1;
+    }
+    #leaderboard {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.8);
+        padding: 30px;
+        border-radius: 15px;
+        max-height: 85vh;
+        overflow-y: auto;
+        box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+    }
+    h1 {
+        text-align: center;
+        font-size: 2.5em;
+        margin-bottom: 30px;
+        color: #00ff00;
+        text-shadow: 0 0 10px rgba(0, 255, 0, 0.7);
+    }
+    table {
+        border-collapse: separate;
+        border-spacing: 0 10px;
+        width: 100%;
+    }
+    th, td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid #00ff00;
+    }
+    th {
+        background-color: rgba(0, 255, 0, 0.2);
+        color: #fff;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    tr {
+        transition: all 0.3s ease;
+    }
+    tr:hover {
+        background-color: rgba(0, 255, 0, 0.1);
+        transform: scale(1.02);
+    }
+    .model-name {
+        cursor: pointer;
+        color: #4CAF50;
+        font-weight: bold;
+    }
+    #model-details {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.95);
+        padding: 30px;
+        border-radius: 15px;
+        display: none;
+        z-index: 10;
+        width: 80%;
+        max-width: 800px;
+        box-shadow: 0 0 30px rgba(0, 255, 0, 0.7);
+    }
+    .close-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        cursor: pointer;
+        font-size: 24px;
+        color: #00ff00;
+    }
+    #ability-chart {
+        width: 100%;
+        height: 300px;
+        margin-top: 20px;
+    }
+    .model-card {
+        display: flex;
+        justify-content: space-between;
+    }
+    .model-info {
+        flex: 1;
+        padding-right: 20px;
+    }
+    .model-stats {
+        flex: 1;
+    }
+    .stat-item {
+        margin-bottom: 10px;
+    }
+    .stat-label {
+        font-weight: bold;
+        color: #00ff00;
+    }
+    @keyframes glow {
+        0% { box-shadow: 0 0 5px #00ff00; }
+        50% { box-shadow: 0 0 20px #00ff00, 0 0 30px #00ff00; }
+        100% { box-shadow: 0 0 5px #00ff00; }
+    }
+    .glow {
+        animation: glow 2s infinite;
+    }
+</style></head><body>
+<canvas id="canvas"></canvas>
+<div id="leaderboard">
+    <h1>Quantum Times: AI Model Leaderboard</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Model</th>
+                <th>Arena Score</th>
+                <th>95% CI</th>
+                <th>Votes</th>
+                <th>Organization</th>
+                <th>License</th>
+                <th>Knowledge Cutoff</th>
+            </tr>
+        </thead>
+        <tbody id="leaderboard-body">
+            <!-- Data will be populated here by JavaScript -->
+        </tbody>
+    </table>
+</div>
+
+<div id="model-details">
+    <span class="close-btn">&times;</span>
+    <div class="model-card">
+        <div class="model-info">
+            <h2 id="detail-model-name"></h2>
+            <p id="detail-description"></p>
+        </div>
+        <div class="model-stats">
+            <div class="stat-item"><span class="stat-label">Organization:</span> <span id="detail-org"></span></div>
+            <div class="stat-item"><span class="stat-label">Arena Score:</span> <span id="detail-score"></span></div>
+            <div class="stat-item"><span class="stat-label">License:</span> <span id="detail-license"></span></div>
+            <div class="stat-item"><span class="stat-label">Knowledge Cutoff:</span> <span id="detail-cutoff"></span></div>
+            <div class="stat-item"><span class="stat-label">Training Data:</span> <span id="detail-training"></span></div>
+            <div class="stat-item"><span class="stat-label">Model Size:</span> <span id="detail-size"></span></div>
+            <div class="stat-item"><span class="stat-label">Inference Speed:</span> <span id="detail-speed"></span></div>
+            <div class="stat-item"><span class="stat-label">Fine-tuning Capability:</span> <span id="detail-finetuning"></span></div>
+        </div>
+    </div>
+    <h3>Top IX Abilities</h3>
+    <canvas id="ability-chart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Extended leaderboard data with additional information
+const leaderboardData = [
+    { 
+        rank: 1, 
+        model: "ChatGPT-4o-latest (2024-08-08)", 
+        score: 1317, 
+        ci: "+5/-5", 
+        votes: 20805, 
+        org: "OpenAI", 
+        license: "Proprietary", 
+        cutoff: "2023/10",
+        description: "The latest iteration of OpenAI's flagship model, known for its exceptional natural language understanding and generation capabilities.",
+        training: "Vast corpus of internet text and specialized datasets",
+        size: "Estimated 1.5 trillion parameters",
+        speed: "150ms average response time",
+        finetuning: "Limited API access for fine-tuning"
+    },
+    { 
+        rank: 2, 
+        model: "Gemini-1.5-Pro-Exp-0801", 
+        score: 1298, 
+        ci: "+4/-4", 
+        votes: 23232, 
+        org: "Google", 
+        license: "Proprietary", 
+        cutoff: "2023/11",
+        description: "Google's advanced multimodal AI model, capable of understanding and generating text, images, and code.",
+        training: "Diverse dataset including web content, books, and scientific papers",
+        size: "Approximately 1.2 trillion parameters",
+        speed: "100ms average response time",
+        finetuning: "Customizable through Google Cloud AI Platform"
+    },
+    { 
+        rank: 2, 
+        model: "Grok-2-08-13", 
+        score: 1293, 
+        ci: "+7/-6", 
+        votes: 6686, 
+        org: "xAI", 
+        license: "Proprietary", 
+        cutoff: "2024/3",
+        description: "xAI's cutting-edge model known for its real-time knowledge integration and witty responses.",
+        training: "Real-time web data and specialized knowledge bases",
+        size: "800 billion parameters",
+        speed: "200ms average response time",
+        finetuning: "Adaptive learning capabilities"
+    },
+    { 
+        rank: 3, 
+        model: "GPT-4o-2024-05-13", 
+        score: 1286, 
+        ci: "+3/-3", 
+        votes: 80741, 
+        org: "OpenAI", 
+        license: "Proprietary", 
+        cutoff: "2023/10",
+        description: "A robust version of GPT-4, optimized for consistent performance across a wide range of tasks.",
+        training: "Curated dataset from diverse sources",
+        size: "1 trillion parameters",
+        speed: "180ms average response time",
+        finetuning: "Available through OpenAI's API"
+    },
+    { 
+        rank: 5, 
+        model: "GPT-4o-mini-2024-07-18", 
+        score: 1275, 
+        ci: "+5/-4", 
+        votes: 21621, 
+        org: "OpenAI", 
+        license: "Proprietary", 
+        cutoff: "2023/10",
+        description: "A compact version of GPT-4, designed for efficient deployment while maintaining high performance.",
+        training: "Distilled knowledge from larger GPT-4 models",
+        size: "500 billion parameters",
+        speed: "90ms average response time",
+        finetuning: "Optimized for edge devices and mobile applications"
+    },
+    { 
+        rank: 5, 
+        model: "Claude 3.5 Sonnet", 
+        score: 1271, 
+        ci: "+3/-3", 
+        votes: 51097, 
+        org: "Anthropic", 
+        license: "Proprietary", 
+        cutoff: "2024/4",
+        description: "Anthropic's advanced AI model, known for its strong reasoning capabilities and ethical considerations.",
+        training: "Curated dataset with emphasis on scientific and academic content",
+        size: "750 billion parameters",
+        speed: "130ms average response time",
+        finetuning: "Available through Anthropic's enterprise solutions"
+    },
+    { 
+        rank: 5, 
+        model: "Grok-2-Mini-08-13", 
+        score: 1268, 
+        ci: "+7/-7", 
+        votes: 7266, 
+        org: "xAI", 
+        license: "Proprietary", 
+        cutoff: "2024/3",
+        description: "A compact version of Grok-2, optimized for quick responses and efficient deployment.",
+        training: "Condensed knowledge from Grok-2 with real-time updates",
+        size: "400 billion parameters",
+        speed: "80ms average response time",
+        finetuning: "Supports on-device learning and personalization"
+    },
+    { 
+        rank: 6, 
+        model: "Gemini Advanced App (2024-05-14)", 
+        score: 1267, 
+        ci: "+4/-3", 
+        votes: 52136, 
+        org: "Google", 
+        license: "Proprietary", 
+        cutoff: "Online",
+        description: "An application-specific version of Gemini, tailored for mobile and web app integration.",
+        training: "Task-specific datasets and user interaction data",
+        size: "600 billion parameters",
+        speed: "70ms average response time",
+        finetuning: "Supports app-specific customization and user preferences"
+    },
+    { 
+        rank: 6, 
+        model: "Meta-Llama-3.1-405b-Instruct", 
+        score: 1266, 
+        ci: "+4/-4", 
+        votes: 22312, 
+        org: "Meta", 
+        license: "Llama 3.1 Community", 
+        cutoff: "2023/12",
+        description: "Meta's open-source large language model, known for its versatility and community-driven improvements.",
+        training: "Diverse internet corpus and specialized instruction datasets",
+        size: "405 billion parameters",
+        speed: "110ms average response time",
+        finetuning: "Highly customizable with strong community support"
+    }
+];
+
+// Populate the leaderboard
+const leaderboardBody = document.getElementById('leaderboard-body');
+leaderboardData.forEach(entry => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td>${entry.rank}</td>
+        <td class="model-name" data-model="${entry.model}">${entry.model}</td>
+        <td>${entry.score}</td>
+        <td>${entry.ci}</td>
+        <td>${entry.votes.toLocaleString()}</td>
+        <td>${entry.org}</td>
+        <td>${entry.license}</td>
+        <td>${entry.cutoff}</td>
+    `;
+    leaderboardBody.appendChild(row);
+});
+
+// Model details popup
+const modelDetails = document.getElementById('model-details');
+const detailModelName = document.getElementById('detail-model-name');
+const detailDescription = document.getElementById('detail-description');
+const detailOrg = document.getElementById('detail-org');
+const detailScore = document.getElementById('detail-score');
+const detailLicense = document.getElementById('detail-license');
+const detailCutoff = document.getElementById('detail-cutoff');
+const detailTraining = document.getElementById('detail-training');
+const detailSize = document.getElementById('detail-size');
+const detailSpeed = document.getElementById('detail-speed');
+const detailFinetuning = document.getElementById('detail-finetuning');
+const closeBtn = document.querySelector('.close-btn');
+
+document.querySelectorAll('.model-name').forEach(modelName => {
+    modelName.addEventListener('click', () => {
+        const model = leaderboardData.find(entry => entry.model === modelName.dataset.model);
+        detailModelName.textContent = model.model;
+        detailDescription.textContent = model.description;
+        detailOrg.textContent = model.org;
+        detailScore.textContent = model.score;
+        detailLicense.textContent = model.license;
+        detailCutoff.textContent = model.cutoff;
+        detailTraining.textContent = model.training;
+        detailSize.textContent = model.size;
+        detailSpeed.textContent = model.speed;
+        detailFinetuning.textContent = model.finetuning;
+        modelDetails.style.display = 'block';
+        updateAbilityChart(model.model);
+    });
+});
+
+closeBtn.addEventListener('click', () => {
+    modelDetails.style.display = 'none';
+});
+
+// Ability chart
+let abilityChart;
+
+function updateAbilityChart(modelName) {
+    const abilities = generateRandomAbilities();
+    const ctx = document.getElementById('ability-chart').getContext('2d');
+    
+    if (abilityChart) {
+        abilityChart.destroy();
+    }
+    
+    abilityChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: Object.keys(abilities),
+            datasets: [{
+                label: modelName,
+                data: Object.values(abilities),
+                backgroundColor: 'rgba(0, 255, 0, 0.2)',
+                borderColor: 'rgba(0, 255, 0, 1)',
+                pointBackgroundColor: 'rgba(0, 255, 0, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(0, 255, 0, 1)'
+            }]
+        },
+        options: {
+            scale: {
+                ticks: {
+                    beginAtZero: true,
+                    max: 100,
+                    fontColor: 'rgba(0, 255, 0, 0.8)'
+                },
+                pointLabels: {
+                    fontColor: 'rgba(0, 255, 0, 0.8)'
+                },
+                gridLines: {
+                    color: 'rgba(0, 255, 0, 0.2)'
+                }
+            },
+            legend: {
+                labels: {
+                    fontColor: 'rgba(0, 255, 0, 0.8)'
+                }
+            }
+        }
+    });
+}
+
+function generateRandomAbilities() {
+    return {
+        'Natural Language Processing': Math.floor(Math.random() * 100),
+        'Computer Vision': Math.floor(Math.random() * 100),
+        'Speech Recognition': Math.floor(Math.random() * 100),
+        'Reasoning': Math.floor(Math.random() * 100),
+        'Problem Solving': Math.floor(Math.random() * 100),
+        'Knowledge Retrieval': Math.floor(Math.random() * 100),
+        'Creativity': Math.floor(Math.random() * 100),
+        'Emotional Intelligence': Math.floor(Math.random() * 100),
+        'Multi-task Learning': Math.floor(Math.random() * 100)
+    };
+}
+
+// 3D Background
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const geometry = new THREE.IcosahedronGeometry(1, 2);
+const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+const icosahedron = new THREE.Mesh(geometry, material);
+scene.add(icosahedron);
+
+camera.position.z = 5;
+
+const particles = new THREE.Group();
+scene.add(particles);
+
+for (let i = 0; i < 2000; i++) {
+    const geometry = new THREE.SphereGeometry(0.02, 32, 32);
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const particle = new THREE.Mesh(geometry, material);
+    
+    const [x, y, z] = Array(3).fill().map(() => THREE.MathUtils.randFloatSpread(100));
+    particle.position.set(x, y, z);
+    particles.add(particle);
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    
+    icosahedron.rotation.x += 0.002;
+    icosahedron.rotation.y += 0.002;
+    
+    particles.rotation.x += 0.0001;
+    particles.rotation.y += 0.0002;
+    
+    renderer.render(scene, camera);
+}
+
+animate();
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Hover effect for table rows
+document.querySelectorAll('#leaderboard-body tr').forEach(row => {
+    row.addEventListener('mouseenter', () => {
+        row.classList.add('glow');
+    });
+    row.addEventListener('mouseleave', () => {
+        row.classList.remove('glow');
+    });
+});
+</script></body></html>
